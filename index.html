@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Countdown</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+        
+        .countdown-container {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            max-width: 400px;
+            width: 100%;
+        }
+        
+        .title {
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .countdown-display {
+            font-size: 80px;
+            font-weight: bold;
+            margin: 30px 0;
+            text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.4);
+            font-family: 'Courier New', monospace;
+        }
+        
+        .status {
+            font-size: 22px;
+            margin: 20px 0;
+            font-weight: bold;
+        }
+        
+        .progress-bar {
+            background: rgba(255, 255, 255, 0.2);
+            height: 10px;
+            border-radius: 5px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4ecdc4, #44a08d);
+            border-radius: 5px;
+            transition: width 0.5s ease;
+        }
+        
+        .finished {
+            color: #ff6b6b;
+            animation: pulse 1s infinite;
+        }
+        
+        .active {
+            color: #4ecdc4;
+        }
+        
+        .warning {
+            color: #feca57;
+        }
+        
+        .critical {
+            color: #ff6b6b;
+            animation: blink 0.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .info {
+            margin-top: 20px;
+            font-size: 14px;
+            opacity: 0.8;
+        }
+        
+        .error {
+            color: #ff6b6b;
+            font-size: 18px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="countdown-container">
+        <div class="title">🔴 LIVE COUNTDOWN 🔴</div>
+        <div class="countdown-display" id="countdown">--:--</div>
+        <div class="progress-bar">
+            <div class="progress-fill" id="progress"></div>
+        </div>
+        <div class="status" id="status">Loading...</div>
+        <div class="info">
+            <div>Target: <span id="target-time">--:--:--</span></div>
+            <div>Your time: <span id="current-time">--:--:--</span></div>
+        </div>
+    </div>
+
+    <script>
+        function getUrlParameter(name) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(name);
+        }
+        
+        function updateCountdown() {
+            const endTimestamp = parseInt(getUrlParameter('end'));
+            
+            if (!endTimestamp) {
+                document.getElementById('countdown').textContent = 'ERROR';
+                document.getElementById('status').textContent = 'No end time provided';
+                document.getElementById('status').className = 'status error';
+                return;
+            }
+            
+            const now = new Date().getTime();
+            const endTime = endTimestamp * 1000; // Convert to milliseconds
+            const timeLeft = endTime - now;
+            
+            // Update current time display
+            const currentTime = new Date();
+            document.getElementById('current-time').textContent = currentTime.toLocaleTimeString();
+            
+            // Update target time display
+            const targetTime = new Date(endTime);
+            document.getElementById('target-time').textContent = targetTime.toLocaleTimeString();
+            
+            if (timeLeft > 0) {
+                const totalDuration = 60 * 1000; // 60 seconds in milliseconds
+                const elapsed = totalDuration - timeLeft;
+                const progress = Math.min((elapsed / totalDuration) * 100, 100);
+                
+                const minutes = Math.floor(timeLeft / (1000 * 60));
+                const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+                
+                document.getElementById('countdown').textContent = 
+                    String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
+                
+                // Update progress bar
+                document.getElementById('progress').style.width = progress + '%';
+                
+                // Update status based on remaining time
+                const totalSeconds = Math.floor(timeLeft / 1000);
+                let statusElement = document.getElementById('status');
+                
+                if (totalSeconds <= 5) {
+                    statusElement.textContent = '🚨 FINAL SECONDS! 🚨';
+                    statusElement.className = 'status critical';
+                } else if (totalSeconds <= 10) {
+                    statusElement.textContent = '⚠️ ALMOST THERE! ⚠️';
+                    statusElement.className = 'status warning';
+                } else if (totalSeconds <= 30) {
+                    statusElement.textContent = '🟡 HALFWAY POINT 🟡';
+                    statusElement.className = 'status warning';
+                } else {
+                    statusElement.textContent = '🟢 COUNTDOWN ACTIVE 🟢';
+                    statusElement.className = 'status active';
+                }
+                
+            } else {
+                document.getElementById('countdown').textContent = '00:00';
+                document.getElementById('status').textContent = '🎉 TIME\'S UP! 🎉';
+                document.getElementById('status').className = 'status finished';
+                document.getElementById('progress').style.width = '100%';
+            }
+        }
+        
+        // Update immediately and then every 100ms for smooth countdown
+        updateCountdown();
+        setInterval(updateCountdown, 100);
+    </script>
+</body>
+</html>
